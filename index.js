@@ -61,10 +61,9 @@ client.on('guildMemberAdd', (member) => {
       });
     });
   }
-    if (found == false)
-    {
-      channel.send(`Welcome ${member.user}, Please enter your steem name (in small letters) inside chat box and send it over here and remember that you should never leave this server to receive messages from bot. `);
-    }
+  if (found == false) {
+    channel.send(`Welcome ${member.user}, Please enter your steem name (in small letters) inside chat box and send it over here and remember that you should never leave this server to receive messages from bot. `);
+  }
 });
 
 client.on("message", (message) => {
@@ -156,24 +155,49 @@ function sendSteemActivityMessagesToUsers() {
           let vote_w = txData.weight / 100;
           //Add for an upvote over comment
           if (dbTemp[i].Steem_name == txData.author && dbTemp[i].Receive_Upvotes == true) {
-            try{
-            client.users.get(dbTemp[i]._id).send("`" + txData.voter + "` Just upvoted: <https://steemit.com/@" + txData.author + "/" + txData.permlink + "> with `" + vote_w + "%`");
-            dbTemp[i].Credit -= 1;
-            updateRealDB(i); // for credit...
-          }
-          catch(err){
+            try {
+              client.users.get(dbTemp[i]._id).send("`" + txData.voter + "` Just upvoted: <https://steemit.com/@" + txData.author + "/" + txData.permlink + "> with `" + vote_w + "%`");
+              dbTemp[i].Credit -= 1;
+              updateRealDB(i); // for credit...
+            } catch (err) {
               dbTemp[i].Receive_msg = false
               updateRealDB(i);
+            }
           }
-          }
-
-
-          //If tx.type is other than vote then manage here.
-
-
-
         }
-      }
+        //Comment, reply, follow, post
+        if (txType == "comment") {
+          if (txData.parent_author == "") {
+            if (dbTemp[i].Steem_name == txData.author && dbTemp[i].Receive_Comments == true) {
+              try {
+                client.users.get(dbTemp[i]._id).send("`" + txData.author + "` Just made a post: <https://steemit.com/@" + txData.author + "/" + txData.permlink + ">");
+                dbTemp[i].Credit -= 1;
+                updateRealDB(i); // for credit...
+              } catch (err) {
+                dbTemp[i].Receive_msg = false
+                updateRealDB(i);
+              }
+            }
+          }
+          if (txData.parent_author != "") {
+            if (dbTemp[i].Steem_name == txData.parent_author && dbTemp[i].Receive_Comments == true) {
+              try {
+                client.users.get(dbTemp[i]._id).send("`" + txData.author + "` Just made a comment: <https://steemit.com/@" + txData.author + "/" + txData.permlink + ">");
+                dbTemp[i].Credit -= 1;
+                updateRealDB(i); // for credit...
+              } catch (err) {
+                dbTemp[i].Receive_msg = false
+                updateRealDB(i);
+              }
+            }
+          }
+        }//Main comment section ends here...
+
+
+
+
+
+      } //Checking main possibility that users can receive messages or not and have enough credit.
     }
   });
 } // Send steem activity function end.
