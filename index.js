@@ -167,31 +167,33 @@ function sendSteemActivityMessagesToUsers() {
         }
         //Comment, reply, follow, post
         if (txType == "comment") {
-          if (txData.parent_author == "") {
-            if (dbTemp[i].Steem_name == txData.author && dbTemp[i].Receive_Comments == true) {
-              try {
-                client.users.get(dbTemp[i]._id).send("`" + txData.author + "` Just made a post: <https://steemit.com/@" + txData.author + "/" + txData.permlink + ">");
-                dbTemp[i].Credit -= 1;
-                updateRealDB(i); // for credit...
-              } catch (err) {
-                dbTemp[i].Receive_msg = false
-                updateRealDB(i);
+          if (dbTemp[i].Receive_Comments == true) {
+            if (txData.parent_author == "") {
+              if (dbTemp[i].Steem_name == txData.author) {
+                try {
+                  client.users.get(dbTemp[i]._id).send("`" + txData.author + "` Just made a post: <https://steemit.com/@" + txData.author + "/" + txData.permlink + ">");
+                  dbTemp[i].Credit -= 1;
+                  updateRealDB(i); // for credit...
+                } catch (err) {
+                  dbTemp[i].Receive_msg = false
+                  updateRealDB(i);
+                }
+              }
+            }
+            if (txData.parent_author != "") {
+              if (dbTemp[i].Steem_name == txData.parent_author) {
+                try {
+                  client.users.get(dbTemp[i]._id).send("`" + txData.author + "` Just made a comment: <https://steemit.com/@" + txData.author + "/" + txData.permlink + ">");
+                  dbTemp[i].Credit -= 1;
+                  updateRealDB(i); // for credit...
+                } catch (err) {
+                  dbTemp[i].Receive_msg = false
+                  updateRealDB(i);
+                }
               }
             }
           }
-          if (txData.parent_author != "") {
-            if (dbTemp[i].Steem_name == txData.parent_author && dbTemp[i].Receive_Comments == true) {
-              try {
-                client.users.get(dbTemp[i]._id).send("`" + txData.author + "` Just made a comment: <https://steemit.com/@" + txData.author + "/" + txData.permlink + ">");
-                dbTemp[i].Credit -= 1;
-                updateRealDB(i); // for credit...
-              } catch (err) {
-                dbTemp[i].Receive_msg = false
-                updateRealDB(i);
-              }
-            }
-          }
-        }//Main comment section ends here...
+        } //Main comment section ends here...
 
 
 
@@ -203,7 +205,7 @@ function sendSteemActivityMessagesToUsers() {
 } // Send steem activity function end.
 
 function updateRealDB(i) {
-  var c_name = dbTemp[i].Steem_name;
+  var c_name = dbTemp[i]._id;
   var c_credit = dbTemp[i].Credit;
   var r_msg = dbTemp[i].Receive_msg;
   MongoClient.connect(url, { 
@@ -212,7 +214,7 @@ function updateRealDB(i) {
     if (err) throw err;
     var dbo = db.db("mydb");
     var query = {
-      Steem_name: c_name
+      _id: c_name
     };
     var newValues = {
       $set: {
@@ -225,7 +227,7 @@ function updateRealDB(i) {
       if (!err) {
         updateDBInVar();
       }
-      console.log("document updated");
+      //console.log("document updated");
       db.close();
     });
   });
