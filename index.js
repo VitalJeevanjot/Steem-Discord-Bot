@@ -62,18 +62,18 @@ client.on('guildMemberAdd', (member) => {
     });
   }
   if (found == false) {
-    channel.send(`Welcome ${member.user}, Please enter your steem name (in small letters) inside chat box and send it over here and remember that you should never leave this server to receive messages from bot. `);
+    channel.send(`Welcome ${member.user}, Please enter your steem name (in small letters) inside chat box and send it as Direct message and remember that you should never leave this server to receive messages from bot. `);
   }
 });
 
 client.on("message", (message) => {
   if (message.author.bot) return;
 
-  if (message.channel.type !== "dm") {
+  if (message.channel.type == "dm" && !message.content.startsWith("!")) {
     Steem.api.getAccounts([message.content], function(err, result) {
       if (result.length == 0) {
         //console.log(message.content);
-        message.channel.send(message.author + " Resend your steem name! The steem name you sent is broken or not available.");
+        message.author.send(message.author + " Resend your steem name! The steem name you sent is broken or not available.");
       } else {
         //console.log(message.content);
         MongoClient.connect(url, { 
@@ -90,6 +90,8 @@ client.on("message", (message) => {
             Receive_Upvotes: true,
             Receive_Comments: true,
             Receive_Replies: true,
+            Receive_follower: true,
+            Receive_transfer: true,
             Extra_Credit: 0,
             Extra_Bool: true,
             Extra_String: "ExtraString",
@@ -97,13 +99,13 @@ client.on("message", (message) => {
           };
           dbo.collection("SteemBotUsers").insertOne(myobj, function(err, res) {
             if (err) {
-              message.channel.send(message.author + " You have already entered your steem username, Please use another discord account to connect to more steem accounts. Only 1 steem account is permitted for each discord account.");
+              message.channel.send(message.author + " You have already entered your steem username, Please use another discord account to connect to more steem accounts. Only 1 steem account is permitted for each discord account. You can use commands to rename your current steem name. Send `!help` to view commands");
               message.author.send(`Hello ${message.author}, From now on, You will receive your steem activity messages here!, \nSend: ` + '`!help`' + ` here to get list of commands that you can use in private chat.
                       `).catch(err => message.channel.send(`Hello ${message.author}, Please allow to chat private with server members in privacy settings of this server\n https://support.discordapp.com/hc/en-us/articles/217916488-Blocking-Privacy-Settings- and then resend your Steem name here to receive a direct message.`));
             } else {
               message.author.send(`Hello ${message.author}, From now on, You will receive your steem activity messages here!, \nSend: ` + '`!help`' + ` here to get list of commands that you can use in private chat.
                       `).catch(err => message.channel.send(`Hello ${message.author}, Please allow to chat private with server members in privacy settings of this server\n https://support.discordapp.com/hc/en-us/articles/217916488-Blocking-Privacy-Settings- and then resend your Steem name here to receive a direct message.`));
-              message.channel.send(message.author + " Done! Your name is inside the database now. `Do not leave this channel or server becuase leaving this channel will disable your account and you won't receive any messages again.`");
+              message.channel.send(message.author + " Done! Your name is inside the database now. **Do not leave this channel or server becuase leaving this channel will disable your account and you won't receive any messages again.**");
               updateDBInVar();
               //  console.log("a document inserted");
               db.close();
@@ -112,18 +114,6 @@ client.on("message", (message) => {
         });
       }
     });
-  } else if (message.channel.type === "dm") {
-    message.author.send(`That's pm!`); // Set commands here...
-  }
-});
-
-client.on("message", (message) => {
-  if (message.content.startsWith("ping")) {
-    message.channel.send("pong!");
-  } else
-
-  if (message.content.startsWith("foo")) {
-    message.channel.send("bar!");
   }
 });
 
@@ -195,9 +185,52 @@ function sendSteemActivityMessagesToUsers() {
           }
         } //Main comment section ends here...
 
+        if (txType = "custom_json") {
+          if (dbTemp[i].Receive_follower == true) {
+            if (txData.json != undefined) {
+              var ifollow = JSON.parse(txData.json);
+              if (ifollow[0] == "follow") {
+                if (ifollow[1].following == dbTemp[i].Steem_name) {
+                  if (ifollow[1].what[0] != null) {
+                    try {
+                      client.users.get(dbTemp[i]._id).send("`" + ifollow[1].follower + "` is now following you on steem.");
+                      dbTemp[i].Credit -= 1;
+                      updateRealDB(i); // for credit...
+                    } catch (err) {
+                      dbTemp[i].Receive_msg = false
+                      updateRealDB(i);
+                    }
+                  }
+                  if (ifollow[1].what[0] == null) {
+                    try {
+                      client.users.get(dbTemp[i]._id).send("`" + ifollow[1].follower + "` unfollowed you on steem.");
+                      dbTemp[i].Credit -= 1;
+                      updateRealDB(i); // for credit...
+                    } catch (err) {
+                      dbTemp[i].Receive_msg = false
+                      updateRealDB(i);
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
 
-
-
+        if (txType == "transfer") {
+          if (dbTemp[i].Receive_transfer == true) {
+            if (dbTemp[i].Steem_name == txData.to) {
+              try {
+                client.users.get(dbTemp[i]._id).send("`" + txData.from + "` sent you `"+txData.amount+"` **Memo** `"+ txData.memo +"`");
+                dbTemp[i].Credit -= 1;
+                updateRealDB(i); // for credit...
+              } catch (err) {
+                dbTemp[i].Receive_msg = false
+                updateRealDB(i);
+              }
+            }
+          }
+        }
 
       } //Checking main possibility that users can receive messages or not and have enough credit.
     }
