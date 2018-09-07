@@ -84,7 +84,7 @@ client.on("message", (message) => {
             _id: message.author.id,
             Discord_name: message.author.toString(),
             Steem_name: message.content,
-            Credit: 1000.01,
+            Credit: 500.01,
             Receive_msg: true, // main on/off
             Receive_Upvotes: true,
             Receive_Comments: true,
@@ -137,7 +137,7 @@ client.on("message", (message) => {
           message.author.send("Sorry, An error occured!")
         };
         if (!err) {
-          message.author.send(message.author + "Your private key is: `" + private_k + "` Insert this only thing in the **memo**.");
+          message.author.send(message.author + " Your private key is: `" + private_k + "` Insert this only thing in the **memo**.");
           updateDBInVar();
         }
         //console.log("document updated");
@@ -278,12 +278,14 @@ function sendSteemActivityMessagesToUsers() {
           }
         }
 
+        if (dbTemp[i].Credit <= 1) {
+          client.users.get(dbTemp[i]._id).send("Your credit is not enough to receive steem activity messages anymore. Please recharge your credit.");
+          dbTemp[i].Receive_msg = false
+          updateRealDB(i);
+        }
+
       } //Checking main possibility that users can receive messages or not and have enough credit.
-      // if (dbTemp[i].Credit <= 0) {
-      //   //Manage here...
-      // turn off sending messages...
-      //
-      // }
+
     }
   });
 } // Send steem activity function end.
