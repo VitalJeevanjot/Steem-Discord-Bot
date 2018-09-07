@@ -95,6 +95,7 @@ client.on("message", (message) => {
             Extra_Credit: 0.01,
             Extra_Bool: true,
             Extra_String: "ExtraString",
+            Post_received: 0,
             Extra_int: 0
           };
           dbo.collection("SteemBotUsers").insertOne(myobj, function(err, res) {
@@ -178,6 +179,7 @@ function sendSteemActivityMessagesToUsers() {
               try {
                 client.users.get(dbTemp[i]._id).send("`" + txData.voter + "` Just upvoted: <https://steemit.com/@" + txData.author + "/" + txData.permlink + "> with `" + vote_w + "%`");
                 dbTemp[i].Credit -= 1;
+                dbTemp[i].Post_received += 1;
                 updateRealDB(i); // for credit...
               } catch (err) {
                 dbTemp[i].Receive_msg = false
@@ -186,7 +188,6 @@ function sendSteemActivityMessagesToUsers() {
             }
           }
         }
-        //Comment, reply, follow, post
         if (txType == "comment") {
           if (dbTemp[i].Receive_Comments == true) {
             if (txData.parent_author == "") {
@@ -194,6 +195,7 @@ function sendSteemActivityMessagesToUsers() {
                 try {
                   client.users.get(dbTemp[i]._id).send("`" + txData.author + "` Just made a post: <https://steemit.com/@" + txData.author + "/" + txData.permlink + ">");
                   dbTemp[i].Credit -= 1;
+                  dbTemp[i].Post_received += 1;
                   updateRealDB(i); // for credit...
                 } catch (err) {
                   dbTemp[i].Receive_msg = false
@@ -206,6 +208,7 @@ function sendSteemActivityMessagesToUsers() {
                 try {
                   client.users.get(dbTemp[i]._id).send("`" + txData.author + "` Just made a comment: <https://steemit.com/@" + txData.author + "/" + txData.permlink + ">");
                   dbTemp[i].Credit -= 1;
+                  dbTemp[i].Post_received += 1;
                   updateRealDB(i); // for credit...
                 } catch (err) {
                   dbTemp[i].Receive_msg = false
@@ -226,6 +229,7 @@ function sendSteemActivityMessagesToUsers() {
                     try {
                       client.users.get(dbTemp[i]._id).send("`" + ifollow[1].follower + "` is now following you on steem.");
                       dbTemp[i].Credit -= 1;
+                      dbTemp[i].Post_received += 1;
                       updateRealDB(i); // for credit...
                     } catch (err) {
                       dbTemp[i].Receive_msg = false
@@ -236,6 +240,7 @@ function sendSteemActivityMessagesToUsers() {
                     try {
                       client.users.get(dbTemp[i]._id).send("`" + ifollow[1].follower + "` unfollowed you on steem.");
                       dbTemp[i].Credit -= 1;
+                      dbTemp[i].Post_received += 1;
                       updateRealDB(i); // for credit...
                     } catch (err) {
                       dbTemp[i].Receive_msg = false
@@ -254,6 +259,7 @@ function sendSteemActivityMessagesToUsers() {
               try {
                 client.users.get(dbTemp[i]._id).send("`" + txData.from + "` sent you `" + txData.amount + "` **Memo** `" + txData.memo + "`");
                 dbTemp[i].Credit -= 1;
+                dbTemp[i].Post_received += 1;
                 updateRealDB(i); // for credit...
               } catch (err) {
                 dbTemp[i].Receive_msg = false
@@ -287,6 +293,7 @@ function updateRealDB(i) {
   var c_credit = dbTemp[i].Credit;
   var r_msg = dbTemp[i].Receive_msg;
   var pr_key = dbTemp[i].private_key;
+  var p_total = dbTemp[i].Post_received;
   MongoClient.connect(url, { 
     useNewUrlParser:  true 
   }, function(err, db) {
@@ -299,7 +306,8 @@ function updateRealDB(i) {
       $set: {
         Credit: c_credit,
         Receive_msg: r_msg,
-        private_key: pr_key
+        private_key: pr_key,
+        Post_received: p_total
       }
     };
     dbo.collection("SteemBotUsers").updateOne(query, newValues, function(err, res) {
