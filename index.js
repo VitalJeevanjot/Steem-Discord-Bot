@@ -136,7 +136,7 @@ client.on("message", (message) => {
           dbo.collection("SteemBotUsers").updateOne(query, newValues, function(err, res) {
             if (err) {
               throw err;
-              message.author.send("Sorry, An error occured!")
+              message.author.send("Sorry, An error occured!").catch(err => message.author.send("Please register an account first!"));
             };
             if (!err) {
               message.author.send({
@@ -144,7 +144,7 @@ client.on("message", (message) => {
                   color: 0x930056,
                   description: message.author + " Your private key is: `" + private_k + "` Insert this only thing in the **memo**."
                 }
-              });
+              }).catch(err => message.author.send("Please register an account first!"));
               updateDBInVar();
             }
             //console.log("document updated");
@@ -153,6 +153,7 @@ client.on("message", (message) => {
         });
 
       } else if (message.content == "!info") {
+        updateDBInVar();
         let sname = "";
         let credit = 0.01;
         for (let g = 0; g < dbTemp.length; g++) {
@@ -174,11 +175,31 @@ client.on("message", (message) => {
               }
             ]
           }
-        }).catch(err =>  message.author.send("Please register an account first!"));
+        }).catch(err => message.author.send("Please register an account first!"));
+      } else if (message.content.startsWith("!rename to")) {
+        let n_steemname = message.content.trim().split(/ +/g)[2]; // New steem name
+        Steem.api.getAccounts([n_steemname], function(err, result) {
+            if (result.length == 0) {
+              message.author.send("Please enter a valid steem name").catch(err => message.author.send("Please register an account first!"));
+            } else if (result.length != 0) {
+              for (let g = 0; g < dbTemp.length; g++) {
+                if (dbTemp[g]._id == message.author.id) {
+                  dbTemp[g].Steem_name = n_steemname;
+                  updateRealDB(g);
+                  message.author.send({
+                    embed: {
+                      color: 0xc500cc,
+                      description: " Your steem name has changed to: `" + n_steemname + "`. Now you will receive messages for this steem name."
+                    }
+                  }).catch(err => message.author.send("Please register an account first!"));
+                }
+              }
+            }
+          });
+        }
 
-      }
-    }
-  }
+    }// Starts with !
+  }// It's a dm
 });
 
 
@@ -329,6 +350,7 @@ function updateRealDB(i) {
   var r_msg = dbTemp[i].Receive_msg;
   var pr_key = dbTemp[i].private_key;
   var p_total = dbTemp[i].Post_received;
+  var new_name = dbTemp[i].Steem_name;
   MongoClient.connect(url, { 
     useNewUrlParser:  true 
   }, function(err, db) {
@@ -342,7 +364,9 @@ function updateRealDB(i) {
         Credit: c_credit,
         Receive_msg: r_msg,
         private_key: pr_key,
-        Post_received: p_total
+        Post_received: p_total,
+        Steem_name: new_name
+
       }
     };
     dbo.collection("SteemBotUsers").updateOne(query, newValues, function(err, res) {
