@@ -68,8 +68,7 @@ client.on('guildMemberAdd', (member) => {
 client.on("message", (message) => {
 
   if (message.author.bot) return;
-  console.log(message.author);
-  if (message.channel.type == "dm" && !message.content.startsWith("!")) {
+  if (!message.content.startsWith("!")) {
     Steem.api.getAccounts([message.content], function(err, result) {
       if (result.length == 0) {
         //console.log(message.content);
@@ -85,14 +84,15 @@ client.on("message", (message) => {
             _id: message.author.id,
             Discord_name: message.author.toString(),
             Steem_name: message.content,
-            Credit: 1000,
+            Credit: 1000.01,
             Receive_msg: true, // main on/off
             Receive_Upvotes: true,
             Receive_Comments: true,
             Receive_Replies: true,
             Receive_follower: true,
             Receive_transfer: true,
-            Extra_Credit: 0,
+            private_key: Math.floor(Math.random() * Math.floor(99999)).toString(),
+            Extra_Credit: 0.01,
             Extra_Bool: true,
             Extra_String: "ExtraString",
             Extra_int: 0
@@ -113,6 +113,37 @@ client.on("message", (message) => {
         });
       }
     });
+  }
+//! Commands...
+  if (message.content == "!generate_key") {
+    let private_k = Math.floor(Math.random() * Math.floor(99999)).toString();
+    MongoClient.connect(url, { 
+      useNewUrlParser:  true 
+    }, function(err, db) {
+      if (err) throw err;
+      var dbo = db.db("mydb");
+      var query = {
+        _id: message.author.id
+      };
+      var newValues = {
+        $set: {
+          private_key: private_k
+        }
+      };
+      dbo.collection("SteemBotUsers").updateOne(query, newValues, function(err, res) {
+        if (err) {
+          throw err;
+          message.author.send("Sorry, An error occured!")
+        };
+        if (!err) {
+          message.author.send(message.author + "Your private key is: `" + private_k + "` Insert this only thing in the **memo**.");
+          updateDBInVar();
+        }
+        //console.log("document updated");
+        db.close();
+      });
+    });
+
   }
 });
 
@@ -136,7 +167,6 @@ function sendSteemActivityMessagesToUsers() {
   Steem.api.streamTransactions('head', (error, result) => {
     let txType = result.operations[0][0];
     let txData = result.operations[0][1];
-
     for (let i = 0; i < dbTemp.length; i++) {
       if (dbTemp[i].Receive_msg == true && dbTemp[i].Credit >= 1) {
         let s_name = dbTemp[i].Steem_name;
@@ -231,6 +261,15 @@ function sendSteemActivityMessagesToUsers() {
               }
             }
           }
+          if (txData.to == "genievot" && txData.from == dbTemp[i].Steem_name) {
+            if (txData.memo == dbTemp[i].private_key) {
+              let amount = parseFloat(txData.amount.split(" ")[0]);
+              let credit_bought = amount * 100;
+              dbTemp[i].Credit = dbTemp[i].Credit + credit_bought;
+              updateRealDB(i);
+              client.users.get(dbTemp[i]._id).send("You just bought " + credit_bought + " credits.");
+            }
+          }
         }
 
       } //Checking main possibility that users can receive messages or not and have enough credit.
@@ -247,6 +286,7 @@ function updateRealDB(i) {
   var c_name = dbTemp[i]._id;
   var c_credit = dbTemp[i].Credit;
   var r_msg = dbTemp[i].Receive_msg;
+  var pr_key = dbTemp[i].private_key;
   MongoClient.connect(url, { 
     useNewUrlParser:  true 
   }, function(err, db) {
@@ -258,7 +298,8 @@ function updateRealDB(i) {
     var newValues = {
       $set: {
         Credit: c_credit,
-        Receive_msg: r_msg
+        Receive_msg: r_msg,
+        private_key: pr_key
       }
     };
     dbo.collection("SteemBotUsers").updateOne(query, newValues, function(err, res) {
