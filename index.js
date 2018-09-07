@@ -68,83 +68,116 @@ client.on('guildMemberAdd', (member) => {
 client.on("message", (message) => {
 
   if (message.author.bot) return;
-  if (!message.content.startsWith("!")) {
-    Steem.api.getAccounts([message.content], function(err, result) {
-      if (result.length == 0) {
-        //console.log(message.content);
-        message.author.send(message.author + " Resend your steem name! The steem name you sent is broken or not available.");
-      } else {
-        //console.log(message.content);
+  if (message.channel.type == "dm") {
+    if (!message.content.startsWith("!")) {
+      Steem.api.getAccounts([message.content], function(err, result) {
+        if (result.length == 0) {
+          //console.log(message.content);
+          message.author.send(message.author + " Resend your steem name! The steem name you sent is broken or not available.");
+        } else {
+          //console.log(message.content);
+          MongoClient.connect(url, { 
+            useNewUrlParser:  true 
+          }, function(err, db) {
+            if (err) throw err;
+            var dbo = db.db("mydb");
+            var myobj = {
+              _id: message.author.id,
+              Discord_name: message.author.toString(),
+              Steem_name: message.content,
+              Credit: 500.01,
+              Receive_msg: true, // main on/off
+              Receive_Upvotes: true,
+              Receive_Comments: true,
+              Receive_Replies: true,
+              Receive_follower: true,
+              Receive_transfer: true,
+              private_key: Math.floor(Math.random() * Math.floor(99999)).toString(),
+              Extra_Credit: 0.01,
+              Extra_Bool: true,
+              Extra_String: "ExtraString",
+              Post_received: 0,
+              Extra_int: 0
+            };
+            dbo.collection("SteemBotUsers").insertOne(myobj, function(err, res) {
+              if (err) {
+                message.author.send(message.author + " You have already entered your steem username, Please use another discord account to connect with more steem accounts. Only 1 steem account is permitted for each discord account. You can use commands to rename your current steem name. Send `!help` to view commands");
+                message.author.send(`Hello ${message.author},Send: ` + '`!help`' + ` here to get list of commands that you can use in private chat.`).catch(err => message.channel.send(`Hello ${message.author}, Please allow to chat private with server members in privacy settings of this server\n https://support.discordapp.com/hc/en-us/articles/217916488-Blocking-Privacy-Settings- and then resend your Steem name here to receive a direct message.`));
+              } else {
+                message.author.send(`Hello ${message.author}, From now on, You will receive your steem activity messages here!, \nSend: ` + '`!help`' + ` here to get list of commands that you can use in private chat.
+                      `).catch(err => message.channel.send(`Hello ${message.author}, Please allow to chat private with server members in privacy settings of this server\n https://support.discordapp.com/hc/en-us/articles/217916488-Blocking-Privacy-Settings- and then resend your Steem name here to receive a direct message.`));
+                message.author.send(message.author + " Done! Your name is inside the database now. **Do not leave main channel or server becuase leaving this channel will disable your account and you won't receive any messages again.**");
+                updateDBInVar();
+                //  console.log("a document inserted");
+                db.close();
+              }
+            });
+          });
+        }
+      });
+    }
+    //! Commands...
+    if (message.content.startsWith("!")) {
+      if (message.content == "!generate_key") {
+        let private_k = Math.floor(Math.random() * Math.floor(99999)).toString();
         MongoClient.connect(url, { 
           useNewUrlParser:  true 
         }, function(err, db) {
           if (err) throw err;
           var dbo = db.db("mydb");
-          var myobj = {
-            _id: message.author.id,
-            Discord_name: message.author.toString(),
-            Steem_name: message.content,
-            Credit: 500.01,
-            Receive_msg: true, // main on/off
-            Receive_Upvotes: true,
-            Receive_Comments: true,
-            Receive_Replies: true,
-            Receive_follower: true,
-            Receive_transfer: true,
-            private_key: Math.floor(Math.random() * Math.floor(99999)).toString(),
-            Extra_Credit: 0.01,
-            Extra_Bool: true,
-            Extra_String: "ExtraString",
-            Post_received: 0,
-            Extra_int: 0
+          var query = {
+            _id: message.author.id
           };
-          dbo.collection("SteemBotUsers").insertOne(myobj, function(err, res) {
-            if (err) {
-              message.author.send(message.author + " You have already entered your steem username, Please use another discord account to connect with more steem accounts. Only 1 steem account is permitted for each discord account. You can use commands to rename your current steem name. Send `!help` to view commands");
-              message.author.send(`Hello ${message.author},Send: ` + '`!help`' + ` here to get list of commands that you can use in private chat.`).catch(err => message.channel.send(`Hello ${message.author}, Please allow to chat private with server members in privacy settings of this server\n https://support.discordapp.com/hc/en-us/articles/217916488-Blocking-Privacy-Settings- and then resend your Steem name here to receive a direct message.`));
-            } else {
-              message.author.send(`Hello ${message.author}, From now on, You will receive your steem activity messages here!, \nSend: ` + '`!help`' + ` here to get list of commands that you can use in private chat.
-                      `).catch(err => message.channel.send(`Hello ${message.author}, Please allow to chat private with server members in privacy settings of this server\n https://support.discordapp.com/hc/en-us/articles/217916488-Blocking-Privacy-Settings- and then resend your Steem name here to receive a direct message.`));
-              message.author.send(message.author + " Done! Your name is inside the database now. **Do not leave main channel or server becuase leaving this channel will disable your account and you won't receive any messages again.**");
-              updateDBInVar();
-              //  console.log("a document inserted");
-              db.close();
+          var newValues = {
+            $set: {
+              private_key: private_k
             }
+          };
+          dbo.collection("SteemBotUsers").updateOne(query, newValues, function(err, res) {
+            if (err) {
+              throw err;
+              message.author.send("Sorry, An error occured!")
+            };
+            if (!err) {
+              message.author.send({
+                embed: {
+                  color: 0x930056,
+                  description: message.author + " Your private key is: `" + private_k + "` Insert this only thing in the **memo**."
+                }
+              });
+              updateDBInVar();
+            }
+            //console.log("document updated");
+            db.close();
           });
         });
-      }
-    });
-  }
-//! Commands...
-  if (message.content == "!generate_key") {
-    let private_k = Math.floor(Math.random() * Math.floor(99999)).toString();
-    MongoClient.connect(url, { 
-      useNewUrlParser:  true 
-    }, function(err, db) {
-      if (err) throw err;
-      var dbo = db.db("mydb");
-      var query = {
-        _id: message.author.id
-      };
-      var newValues = {
-        $set: {
-          private_key: private_k
-        }
-      };
-      dbo.collection("SteemBotUsers").updateOne(query, newValues, function(err, res) {
-        if (err) {
-          throw err;
-          message.author.send("Sorry, An error occured!")
-        };
-        if (!err) {
-          message.author.send(message.author + " Your private key is: `" + private_k + "` Insert this only thing in the **memo**.");
-          updateDBInVar();
-        }
-        //console.log("document updated");
-        db.close();
-      });
-    });
 
+      } else if (message.content == "!info") {
+        let sname = "";
+        let credit = 0.01;
+        for (let g = 0; g < dbTemp.length; g++) {
+          if (dbTemp[g]._id == message.author.id) {
+            sname = dbTemp[g].Steem_name;
+            credit = dbTemp[g].Credit;
+          }
+        }
+        message.author.send({
+          embed: {
+            color: 0x00cc33,
+            fields: [{
+                name: "Steem Name",
+                value: sname
+              },
+              {
+                name: "Credit",
+                value: credit.toString()
+              }
+            ]
+          }
+        }).catch(err =>  message.author.send("Please register an account first!"));
+
+      }
+    }
   }
 });
 
@@ -273,7 +306,7 @@ function sendSteemActivityMessagesToUsers() {
               let credit_bought = amount * 100;
               dbTemp[i].Credit = dbTemp[i].Credit + credit_bought;
               updateRealDB(i);
-              client.users.get(dbTemp[i]._id).send("You just bought " + credit_bought + " credits.");
+              client.users.get(dbTemp[i]._id).send("You just bought `" + credit_bought + "` credits.");
             }
           }
         }
