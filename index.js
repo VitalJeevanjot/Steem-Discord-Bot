@@ -61,13 +61,14 @@ client.on('guildMemberAdd', (member) => {
     });
   }
   if (found == false) {
-    channel.send(`Welcome ${member.user}, Please enter your steem name (in small letters) inside chat box and send it as Direct message and remember that you should never leave this server to receive messages from bot. `);
+    channel.send(`Welcome ${member.user}, Please send your steem name (in small letters) as Direct message and never leave this server to receive messages from bot. `);
   }
 });
 
 client.on("message", (message) => {
-  if (message.author.bot) return;
 
+  if (message.author.bot) return;
+  console.log(message.author);
   if (message.channel.type == "dm" && !message.content.startsWith("!")) {
     Steem.api.getAccounts([message.content], function(err, result) {
       if (result.length == 0) {
@@ -98,7 +99,7 @@ client.on("message", (message) => {
           };
           dbo.collection("SteemBotUsers").insertOne(myobj, function(err, res) {
             if (err) {
-              message.author.send(message.author + " You have already entered your steem username, Please use another discord account to connect to more steem accounts. Only 1 steem account is permitted for each discord account. You can use commands to rename your current steem name. Send `!help` to view commands");
+              message.author.send(message.author + " You have already entered your steem username, Please use another discord account to connect with more steem accounts. Only 1 steem account is permitted for each discord account. You can use commands to rename your current steem name. Send `!help` to view commands");
               message.author.send(`Hello ${message.author},Send: ` + '`!help`' + ` here to get list of commands that you can use in private chat.`).catch(err => message.channel.send(`Hello ${message.author}, Please allow to chat private with server members in privacy settings of this server\n https://support.discordapp.com/hc/en-us/articles/217916488-Blocking-Privacy-Settings- and then resend your Steem name here to receive a direct message.`));
             } else {
               message.author.send(`Hello ${message.author}, From now on, You will receive your steem activity messages here!, \nSend: ` + '`!help`' + ` here to get list of commands that you can use in private chat.
@@ -133,35 +134,77 @@ function updateDBInVar() {
 function sendSteemActivityMessagesToUsers() {
   //dbTemp[i].Steem_name
   Steem.api.streamTransactions('head', (error, result) => {
-      let txType = result.operations[0][0];
-      let txData = result.operations[0][1];
+    let txType = result.operations[0][0];
+    let txData = result.operations[0][1];
 
-      for (let i = 0; i < dbTemp.length; i++) {
-        if (dbTemp[i].Receive_msg == true && dbTemp[i].Credit >= 1) {
-          let s_name = dbTemp[i].Steem_name;
-            if (dbTemp[i].Receive_Upvotes == true) {
-              if (txType == "vote") {
-                let vote_w = txData.weight / 100;
-                //Add for an upvote over comment
-                if (s_name == txData.author) {
-                  try {
-                    client.users.get(dbTemp[i]._id).send("`" + txData.voter + "` Just upvoted: <https://steemit.com/@" + txData.author + "/" + txData.permlink + "> with `" + vote_w + "%`");
-                    dbTemp[i].Credit -= 1;
-                    updateRealDB(i); // for credit...
-                  } catch (err) {
-                    dbTemp[i].Receive_msg = false
-                    updateRealDB(i);
-                  }
+    for (let i = 0; i < dbTemp.length; i++) {
+      if (dbTemp[i].Receive_msg == true && dbTemp[i].Credit >= 1) {
+        let s_name = dbTemp[i].Steem_name;
+        if (dbTemp[i].Receive_Upvotes == true) {
+          if (txType == "vote") {
+            let vote_w = txData.weight / 100;
+            //Add for an upvote over comment
+            if (s_name == txData.author) {
+              try {
+                client.users.get(dbTemp[i]._id).send("`" + txData.voter + "` Just upvoted: <https://steemit.com/@" + txData.author + "/" + txData.permlink + "> with `" + vote_w + "%`");
+                dbTemp[i].Credit -= 1;
+                updateRealDB(i); // for credit...
+              } catch (err) {
+                dbTemp[i].Receive_msg = false
+                updateRealDB(i);
+              }
+            }
+          }
+        }
+        //Comment, reply, follow, post
+        if (txType == "comment") {
+          if (dbTemp[i].Receive_Comments == true) {
+            if (txData.parent_author == "") {
+              if (s_name == txData.author) {
+                try {
+                  client.users.get(dbTemp[i]._id).send("`" + txData.author + "` Just made a post: <https://steemit.com/@" + txData.author + "/" + txData.permlink + ">");
+                  dbTemp[i].Credit -= 1;
+                  updateRealDB(i); // for credit...
+                } catch (err) {
+                  dbTemp[i].Receive_msg = false
+                  updateRealDB(i);
                 }
               }
             }
-            //Comment, reply, follow, post
-            if (txType == "comment") {
-              if (dbTemp[i].Receive_Comments == true) {
-                if (txData.parent_author == "") {
-                  if (s_name == txData.author) {
+            if (txData.parent_author != "") {
+              if (s_name == txData.parent_author) {
+                try {
+                  client.users.get(dbTemp[i]._id).send("`" + txData.author + "` Just made a comment: <https://steemit.com/@" + txData.author + "/" + txData.permlink + ">");
+                  dbTemp[i].Credit -= 1;
+                  updateRealDB(i); // for credit...
+                } catch (err) {
+                  dbTemp[i].Receive_msg = false
+                  updateRealDB(i);
+                }
+              }
+            }
+          }
+        } //Main comment section ends here...
+
+        if (txType == "custom_json") {
+          if (dbTemp[i].Receive_follower == true) {
+            if (txData.json != undefined) {
+              var ifollow = JSON.parse(txData.json);
+              if (ifollow[0] == "follow") {
+                if (ifollow[1].following == s_name) {
+                  if (ifollow[1].what[0] != null) {
                     try {
-                      client.users.get(dbTemp[i]._id).send("`" + txData.author + "` Just made a post: <https://steemit.com/@" + txData.author + "/" + txData.permlink + ">");
+                      client.users.get(dbTemp[i]._id).send("`" + ifollow[1].follower + "` is now following you on steem.");
+                      dbTemp[i].Credit -= 1;
+                      updateRealDB(i); // for credit...
+                    } catch (err) {
+                      dbTemp[i].Receive_msg = false
+                      updateRealDB(i);
+                    }
+                  }
+                  if (ifollow[1].what[0] == null) {
+                    try {
+                      client.users.get(dbTemp[i]._id).send("`" + ifollow[1].follower + "` unfollowed you on steem.");
                       dbTemp[i].Credit -= 1;
                       updateRealDB(i); // for credit...
                     } catch (err) {
@@ -170,130 +213,88 @@ function sendSteemActivityMessagesToUsers() {
                     }
                   }
                 }
-                if (txData.parent_author != "") {
-                  if (s_name == txData.parent_author) {
-                    try {
-                      client.users.get(dbTemp[i]._id).send("`" + txData.author + "` Just made a comment: <https://steemit.com/@" + txData.author + "/" + txData.permlink + ">");
-                      dbTemp[i].Credit -= 1;
-                      updateRealDB(i); // for credit...
-                    } catch (err) {
-                      dbTemp[i].Receive_msg = false
-                      updateRealDB(i);
-                    }
-                  }
-                }
-              }
-            } //Main comment section ends here...
-
-            if (txType == "custom_json") {
-              if (dbTemp[i].Receive_follower == true) {
-                if (txData.json != undefined) {
-                  var ifollow = JSON.parse(txData.json);
-                  if (ifollow[0] == "follow") {
-                    if (ifollow[1].following == s_name) {
-                      if (ifollow[1].what[0] != null) {
-                        try {
-                          client.users.get(dbTemp[i]._id).send("`" + ifollow[1].follower + "` is now following you on steem.");
-                          dbTemp[i].Credit -= 1;
-                          updateRealDB(i); // for credit...
-                        } catch (err) {
-                          dbTemp[i].Receive_msg = false
-                          updateRealDB(i);
-                        }
-                      }
-                      if (ifollow[1].what[0] == null) {
-                        try {
-                          client.users.get(dbTemp[i]._id).send("`" + ifollow[1].follower + "` unfollowed you on steem.");
-                          dbTemp[i].Credit -= 1;
-                          updateRealDB(i); // for credit...
-                        } catch (err) {
-                          dbTemp[i].Receive_msg = false
-                          updateRealDB(i);
-                        }
-                      }
-                    }
-                  }
-                }
               }
             }
+          }
+        }
 
-            if (txType == "transfer") {
-              if (dbTemp[i].Receive_transfer == true) {
-                if (dbTemp[i].Steem_name == txData.to) {
-                  try {
-                    client.users.get(dbTemp[i]._id).send("`" + txData.from + "` sent you `" + txData.amount + "` **Memo** `" + txData.memo + "`");
-                    dbTemp[i].Credit -= 1;
-                    updateRealDB(i); // for credit...
-                  } catch (err) {
-                    dbTemp[i].Receive_msg = false
-                    updateRealDB(i);
-                  }
-                }
+        if (txType == "transfer") {
+          if (dbTemp[i].Receive_transfer == true) {
+            if (dbTemp[i].Steem_name == txData.to) {
+              try {
+                client.users.get(dbTemp[i]._id).send("`" + txData.from + "` sent you `" + txData.amount + "` **Memo** `" + txData.memo + "`");
+                dbTemp[i].Credit -= 1;
+                updateRealDB(i); // for credit...
+              } catch (err) {
+                dbTemp[i].Receive_msg = false
+                updateRealDB(i);
               }
             }
-
-          } //Checking main possibility that users can receive messages or not and have enough credit.
-          // if (dbTemp[i].Credit <= 0) {
-          //   //Manage here...
-          //
-          // }
+          }
         }
-      });
-  } // Send steem activity function end.
 
-  function updateRealDB(i) {
-    var c_name = dbTemp[i]._id;
-    var c_credit = dbTemp[i].Credit;
-    var r_msg = dbTemp[i].Receive_msg;
-    MongoClient.connect(url, { 
-      useNewUrlParser:  true 
-    }, function(err, db) {
-      if (err) throw err;
-      var dbo = db.db("mydb");
-      var query = {
-        _id: c_name
-      };
-      var newValues = {
-        $set: {
-          Credit: c_credit,
-          Receive_msg: r_msg
-        }
-      };
-      dbo.collection("SteemBotUsers").updateOne(query, newValues, function(err, res) {
-        if (err) throw err;
-        if (!err) {
-          updateDBInVar();
-        }
-        //console.log("document updated");
-        db.close();
-      });
-    });
-  }
-
-
-  client.on("guildMemberRemove", (member) => {
-
-    //Drop the row of the user...
-    MongoClient.connect(url, { 
-      useNewUrlParser:  true 
-    }, function(err, db) {
-      if (err) throw err;
-      var dbo = db.db("mydb");
-      var query = {
-        _id: member.id
-      };
-      var newValues = {
-        $set: {
-          Receive_msg: false
-        }
-      };
-      dbo.collection("SteemBotUsers").updateMany(query, newValues, function(err, res) {
-        if (err) throw err;
-        if (!err) {
-          updateDBInVar();
-        }
-        db.close();
-      });
-    });
-
+      } //Checking main possibility that users can receive messages or not and have enough credit.
+      // if (dbTemp[i].Credit <= 0) {
+      //   //Manage here...
+      // turn off sending messages...
+      //
+      // }
+    }
   });
+} // Send steem activity function end.
+
+function updateRealDB(i) {
+  var c_name = dbTemp[i]._id;
+  var c_credit = dbTemp[i].Credit;
+  var r_msg = dbTemp[i].Receive_msg;
+  MongoClient.connect(url, { 
+    useNewUrlParser:  true 
+  }, function(err, db) {
+    if (err) throw err;
+    var dbo = db.db("mydb");
+    var query = {
+      _id: c_name
+    };
+    var newValues = {
+      $set: {
+        Credit: c_credit,
+        Receive_msg: r_msg
+      }
+    };
+    dbo.collection("SteemBotUsers").updateOne(query, newValues, function(err, res) {
+      if (err) throw err;
+      if (!err) {
+        updateDBInVar();
+      }
+      //console.log("document updated");
+      db.close();
+    });
+  });
+}
+
+
+client.on("guildMemberRemove", (member) => {
+
+  //Drop the row of the user...
+  MongoClient.connect(url, { 
+    useNewUrlParser:  true 
+  }, function(err, db) {
+    if (err) throw err;
+    var dbo = db.db("mydb");
+    var query = {
+      _id: member.id
+    };
+    var newValues = {
+      $set: {
+        Receive_msg: false
+      }
+    };
+    dbo.collection("SteemBotUsers").updateMany(query, newValues, function(err, res) {
+      if (err) throw err;
+      if (!err) {
+        updateDBInVar();
+      }
+      db.close();
+    });
+  });
+});
