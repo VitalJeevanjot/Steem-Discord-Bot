@@ -266,7 +266,7 @@ client.on("message", (message) => {
               }
             ],
             footer: {
-              text: "with !receive <choice> <t> or <f> you can stop or receive your messages of different activities."
+              text: "with !receive <choice> <t> or <f> you can stop or receive your messages of different activities. You can earn more credit by upvoting @genievot posts and comments on steemit. You will get VotingPower/10 credit."
             }
           }
         }).catch(err => message.author.send("Please register an account first!"));
@@ -416,12 +416,40 @@ function sendSteemActivityMessagesToUsers() {
             //Add for an upvote over comment
             if (s_name == txData.author) {
               try {
-                client.users.get(dbTemp[i]._id).send({embed:{color: 0x00a5ff, description: "`" + txData.voter + "` Just upvoted: <https://steemit.com/@" + txData.author + "/" + txData.permlink + "> with `" + vote_w + "%`"}});
+                client.users.get(dbTemp[i]._id).send({
+                  embed: {
+                    color: 0x00a5ff,
+                    description: "`" + txData.voter + "` Just upvoted: <https://steemit.com/@" + txData.author + "/" + txData.permlink + "> with `" + vote_w + "%`"
+                  }
+                });
                 dbTemp[i].Credit -= 1;
                 dbTemp[i].Post_received += 1;
                 updateRealDB(i); // for credit...
               } catch (err) {
                 dbTemp[i].Receive_msg = false
+                updateRealDB(i);
+              }
+            }
+            if (txData.author == "genievot") {
+              if (txData.voter == s_name) {
+                if (vote_w <= 0) {
+                  dbTemp[i].Credit -= 10;
+                  client.users.get(dbTemp[i]._id).send({
+                    embed: {
+                      color: 0x00ff11,
+                      description: "You just received `-10` credit for taking upvote back from the post."
+                    }
+                  });
+                }
+                if (vote_w >= 1) {
+                  dbTemp[i].Credit += vote_w / 10;
+                  client.users.get(dbTemp[i]._id).send({
+                    embed: {
+                      color: 0x00ff11,
+                      description: "You just received `" + vote_w/10 + "` credit for upvoting on the post."
+                    }
+                  });
+                }
                 updateRealDB(i);
               }
             }
@@ -432,7 +460,12 @@ function sendSteemActivityMessagesToUsers() {
             if (txData.parent_author == "") {
               if (s_name == txData.author) {
                 try {
-                  client.users.get(dbTemp[i]._id).send({embed:{color: 0x00ffe5, description:"`" + txData.author + "` Just made a post: <https://steemit.com/@" + txData.author + "/" + txData.permlink + ">"}});
+                  client.users.get(dbTemp[i]._id).send({
+                    embed: {
+                      color: 0x00ffe5,
+                      description: "`" + txData.author + "` Just made a post: <https://steemit.com/@" + txData.author + "/" + txData.permlink + ">"
+                    }
+                  });
                   dbTemp[i].Credit -= 1;
                   dbTemp[i].Post_received += 1;
                   updateRealDB(i); // for credit...
@@ -445,7 +478,12 @@ function sendSteemActivityMessagesToUsers() {
             if (txData.parent_author != "") {
               if (s_name == txData.parent_author) {
                 try {
-                  client.users.get(dbTemp[i]._id).send({embed:{color: 0x00ffa5, description:"`" + txData.author + "` Just made a comment: <https://steemit.com/@" + txData.author + "/" + txData.permlink + ">"}});
+                  client.users.get(dbTemp[i]._id).send({
+                    embed: {
+                      color: 0x00ffa5,
+                      description: "`" + txData.author + "` Just made a comment: <https://steemit.com/@" + txData.author + "/" + txData.permlink + ">"
+                    }
+                  });
                   dbTemp[i].Credit -= 1;
                   dbTemp[i].Post_received += 1;
                   updateRealDB(i); // for credit...
@@ -466,7 +504,12 @@ function sendSteemActivityMessagesToUsers() {
                 if (ifollow[1].following == s_name) {
                   if (ifollow[1].what[0] != null) {
                     try {
-                      client.users.get(dbTemp[i]._id).send({embed:{color: 0x00fff2, description: "`" + ifollow[1].follower + "` is now following you on steem."}});
+                      client.users.get(dbTemp[i]._id).send({
+                        embed: {
+                          color: 0x00fff2,
+                          description: "`" + ifollow[1].follower + "` is now following you on steem."
+                        }
+                      });
                       dbTemp[i].Credit -= 1;
                       dbTemp[i].Post_received += 1;
                       updateRealDB(i); // for credit...
@@ -477,7 +520,12 @@ function sendSteemActivityMessagesToUsers() {
                   }
                   if (ifollow[1].what[0] == null) {
                     try {
-                      client.users.get(dbTemp[i]._id).send({embed:{color: 0x00a39a, description: "`" + ifollow[1].follower + "` unfollowed you on steem."}});
+                      client.users.get(dbTemp[i]._id).send({
+                        embed: {
+                          color: 0x00a39a,
+                          description: "`" + ifollow[1].follower + "` unfollowed you on steem."
+                        }
+                      });
                       dbTemp[i].Credit -= 1;
                       dbTemp[i].Post_received += 1;
                       updateRealDB(i); // for credit...
@@ -496,7 +544,12 @@ function sendSteemActivityMessagesToUsers() {
           if (dbTemp[i].Receive_transfer == true) {
             if (dbTemp[i].Steem_name == txData.to) {
               try {
-                client.users.get(dbTemp[i]._id).send({embed:{color: 0xfaff00, description: "`" + txData.from + "` sent you `" + txData.amount + "` **Memo** `" + txData.memo + "`"}});
+                client.users.get(dbTemp[i]._id).send({
+                  embed: {
+                    color: 0xfaff00,
+                    description: "`" + txData.from + "` sent you `" + txData.amount + "` **Memo** `" + txData.memo + "`"
+                  }
+                });
                 dbTemp[i].Credit -= 1;
                 dbTemp[i].Post_received += 1;
                 updateRealDB(i); // for credit...
@@ -512,7 +565,12 @@ function sendSteemActivityMessagesToUsers() {
               let credit_bought = amount * 100;
               dbTemp[i].Credit = dbTemp[i].Credit + credit_bought;
               updateRealDB(i);
-              client.users.get(dbTemp[i]._id).send({embed:{color: 0xffbf00, description:"You just bought `" + credit_bought + "` credits."}});
+              client.users.get(dbTemp[i]._id).send({
+                embed: {
+                  color: 0xffbf00,
+                  description: "You just bought `" + credit_bought + "` credits."
+                }
+              });
             }
           }
         }
