@@ -102,10 +102,10 @@ client.on("message", (message) => {
             dbo.collection("SteemBotUsers").insertOne(myobj, function(err, res) {
               if (err) {
                 message.author.send(message.author + " You have already entered your steem username, Please use another discord account to connect with more steem accounts. Only 1 steem account is permitted for each discord account. You can use commands to rename your current steem name. Send `!help` to view commands");
-                message.author.send(`Hello ${message.author},Send: ` + '`!help`' + ` here to get list of commands that you can use in private chat.`).catch(err => message.channel.send(`Hello ${message.author}, Please allow to chat private with server members in privacy settings of this server\n https://support.discordapp.com/hc/en-us/articles/217916488-Blocking-Privacy-Settings- and then resend your Steem name here to receive a direct message.`));
+                message.author.send(`Hello ${message.author},Send: ` + '`!help`' + ` here to get list of commands that you can use in private chat.`).catch(err => client.channels.get("482226873485754375").send(`Hello ${message.author}, Please allow to chat private with server members in privacy settings of this server\n https://support.discordapp.com/hc/en-us/articles/217916488-Blocking-Privacy-Settings- and then resend your Steem name here to receive a direct message.`));
               } else {
                 message.author.send(`Hello ${message.author}, From now on, You will receive your steem activity messages here!, \nSend: ` + '`!help`' + ` here to get list of commands that you can use in private chat.
-                      `).catch(err => message.channel.send(`Hello ${message.author}, Please allow to chat private with server members in privacy settings of this server\n https://support.discordapp.com/hc/en-us/articles/217916488-Blocking-Privacy-Settings- and then resend your Steem name here to receive a direct message.`));
+                      `).catch(err => client.channels.get("482226873485754375").send(`Hello ${message.author}, Please allow to chat private with server members in privacy settings of this server\n https://support.discordapp.com/hc/en-us/articles/217916488-Blocking-Privacy-Settings- and then resend your Steem on a direct message.`));
                 message.author.send(message.author + " Done! Your name is inside the database now. **Do not leave main channel or server becuase leaving this channel will disable your account and you won't receive any messages again.**");
                 updateDBInVar();
                 //  console.log("a document inserted");
@@ -219,7 +219,7 @@ client.on("message", (message) => {
                     color: 0xc500cc,
                     description: " Your steem name has changed to: `" + n_steemname + "`. Now you will receive messages for this steem name."
                   }
-                }).catch(err => message.author.send("Please register an account first!"));
+                }).catch(err => message.author.send("Please register an account first!")).catch(err => client.channels.get("482226873485754375").send(`Hello ${message.author}, Please allow to chat private with server members in privacy settings of this server\n https://support.discordapp.com/hc/en-us/articles/217916488-Blocking-Privacy-Settings- and then resend your Steem on a direct message.`));
               }
             }
           }
@@ -421,7 +421,7 @@ function sendSteemActivityMessagesToUsers() {
                     color: 0x00a5ff,
                     description: "`" + txData.voter + "` Just upvoted: <https://steemit.com/@" + txData.author + "/" + txData.permlink + "> with `" + vote_w + "%`"
                   }
-                });
+                }).catch(err => client.channels.get("482226873485754375").send(`Hello ${dbTemp[i].Discord_name}, Please allow to chat private with server members in privacy settings of this server\n https://support.discordapp.com/hc/en-us/articles/217916488-Blocking-Privacy-Settings- and then resend your Steem on a direct message.`));
                 dbTemp[i].Credit -= 1;
                 dbTemp[i].Post_received += 1;
                 updateRealDB(i); // for credit...
@@ -439,7 +439,7 @@ function sendSteemActivityMessagesToUsers() {
                       color: 0x00ff11,
                       description: "You just received `-10` credit for taking upvote back from the post."
                     }
-                  });
+                  }).catch(err => client.channels.get("482226873485754375").send(`Hello ${dbTemp[i].Discord_name}, Please allow to chat private with server members in privacy settings of this server\n https://support.discordapp.com/hc/en-us/articles/217916488-Blocking-Privacy-Settings- and then resend your Steem on a direct message.`));
                 }
                 if (vote_w >= 1) {
                   dbTemp[i].Credit += vote_w / 10;
@@ -448,7 +448,7 @@ function sendSteemActivityMessagesToUsers() {
                       color: 0x00ff11,
                       description: "You just received `" + vote_w/10 + "` credit for upvoting on the post."
                     }
-                  });
+                  }).catch(err => client.channels.get("482226873485754375").send(`Hello ${dbTemp[i].Discord_name}, Please allow to chat private with server members in privacy settings of this server\n https://support.discordapp.com/hc/en-us/articles/217916488-Blocking-Privacy-Settings- and then resend your Steem on a direct message.`));
                 }
                 updateRealDB(i);
               }
@@ -465,7 +465,7 @@ function sendSteemActivityMessagesToUsers() {
                       color: 0x00ffe5,
                       description: "`" + txData.author + "` Just made a post: <https://steemit.com/@" + txData.author + "/" + txData.permlink + ">"
                     }
-                  });
+                  }).catch(err => client.channels.get("482226873485754375").send(`Hello ${dbTemp[i].Discord_name}, Please allow to chat private with server members in privacy settings of this server\n https://support.discordapp.com/hc/en-us/articles/217916488-Blocking-Privacy-Settings- and then resend your Steem on a direct message.`));
                   dbTemp[i].Credit -= 1;
                   dbTemp[i].Post_received += 1;
                   updateRealDB(i); // for credit...
@@ -483,7 +483,7 @@ function sendSteemActivityMessagesToUsers() {
                       color: 0x00ffa5,
                       description: "`" + txData.author + "` Just made a comment: <https://steemit.com/@" + txData.author + "/" + txData.permlink + ">"
                     }
-                  });
+                  }).catch(err => client.channels.get("482226873485754375").send(`Hello ${dbTemp[i].Discord_name}, Please allow to chat private with server members in privacy settings of this server\n https://support.discordapp.com/hc/en-us/articles/217916488-Blocking-Privacy-Settings- and then resend your Steem on a direct message.`));
                   dbTemp[i].Credit -= 1;
                   dbTemp[i].Post_received += 1;
                   updateRealDB(i); // for credit...
@@ -509,7 +509,7 @@ function sendSteemActivityMessagesToUsers() {
                           color: 0x00fff2,
                           description: "`" + ifollow[1].follower + "` is now following you on steem."
                         }
-                      });
+                      }).catch(err => client.channels.get("482226873485754375").send(`Hello ${dbTemp[i].Discord_name}, Please allow to chat private with server members in privacy settings of this server\n https://support.discordapp.com/hc/en-us/articles/217916488-Blocking-Privacy-Settings- and then resend your Steem on a direct message.`));
                       dbTemp[i].Credit -= 1;
                       dbTemp[i].Post_received += 1;
                       updateRealDB(i); // for credit...
@@ -549,7 +549,7 @@ function sendSteemActivityMessagesToUsers() {
                     color: 0xfaff00,
                     description: "`" + txData.from + "` sent you `" + txData.amount + "` **Memo** `" + txData.memo + "`"
                   }
-                });
+                }).catch(err => client.channels.get("482226873485754375").send(`Hello ${dbTemp[i].Discord_name}, Please allow to chat private with server members in privacy settings of this server\n https://support.discordapp.com/hc/en-us/articles/217916488-Blocking-Privacy-Settings- and then resend your Steem on a direct message.`));
                 dbTemp[i].Credit -= 1;
                 dbTemp[i].Post_received += 1;
                 updateRealDB(i); // for credit...
@@ -570,14 +570,14 @@ function sendSteemActivityMessagesToUsers() {
                   color: 0xffbf00,
                   description: "You just bought `" + credit_bought + "` credits."
                 }
-              });
+              }).catch(err => client.channels.get("482226873485754375").send(`Hello ${dbTemp[i].Discord_name}, Please allow to chat private with server members in privacy settings of this server\n https://support.discordapp.com/hc/en-us/articles/217916488-Blocking-Privacy-Settings- and then resend your Steem on a direct message.`));
             }
           }
         }
 
         if (dbTemp[i].Credit <= 1) {
           client.users.get(dbTemp[i]._id).send("Your credit is not enough to receive steem activity messages anymore. Please recharge your credit.");
-          dbTemp[i].Receive_msg = false
+          dbTemp[i].Receive_msg = false;
           updateRealDB(i);
         }
 
