@@ -156,11 +156,11 @@ client.on("message", (message) => {
         updateDBInVar();
         let sname = "";
         let credit = 0.01;
-        let r_msg;
-        let r_vote;
-        let r_comment;
-        let r_transfer;
-        let r_follower;
+        let r_msg=false;
+        let r_vote=false;
+        let r_comment=false;
+        let r_transfer=false;
+        let r_follower=false;
         for (let g = 0; g < dbTemp.length; g++) {
           if (dbTemp[g]._id == message.author.id) {
             sname = dbTemp[g].Steem_name;
@@ -178,6 +178,10 @@ client.on("message", (message) => {
             fields: [{
                 name: "Steem Name",
                 value: sname
+              },
+              {
+                name: "Credit",
+                value: credit.toString()
               },
               {
                 name: "Receive any user activity messages",

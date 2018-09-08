@@ -5,7 +5,6 @@
   "main": "bot.js",
   "author": "Jeevanjot-Singh",
   "dependencies": {
-    "better-sqlite3": "^4.1.4",
     "discord.js": "^11.4.2",
     "discord.js-commando": "^0.10.0",
     "enmap": "^3.1.3",
