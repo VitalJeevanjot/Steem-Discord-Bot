@@ -156,10 +156,20 @@ client.on("message", (message) => {
         updateDBInVar();
         let sname = "";
         let credit = 0.01;
+        let r_msg;
+        let r_vote;
+        let r_comment;
+        let r_transfer;
+        let r_follower;
         for (let g = 0; g < dbTemp.length; g++) {
           if (dbTemp[g]._id == message.author.id) {
             sname = dbTemp[g].Steem_name;
             credit = dbTemp[g].Credit;
+            r_msg = dbTemp[g].Receive_msg;
+            r_vote = dbTemp[g].Receive_Upvotes;
+            r_comment = dbTemp[g].Receive_Comments;
+            r_transfer = dbTemp[g].Receive_transfer;
+            r_follower = dbTemp[g].Receive_follower;
           }
         }
         message.author.send({
@@ -170,36 +180,202 @@ client.on("message", (message) => {
                 value: sname
               },
               {
-                name: "Credit",
-                value: credit.toString()
+                name: "Receive any user activity messages",
+                value: r_msg.toString()
+              },
+              {
+                name: "Receive upvotes",
+                value: r_vote.toString()
+              },
+              {
+                name: "Receive Comments",
+                value: r_comment.toString()
+              },
+              {
+                name: "Receive transfer",
+                value: r_transfer.toString()
+              },
+              {
+                name: "Receive follower",
+                value: r_follower.toString()
               }
+
             ]
           }
         }).catch(err => message.author.send("Please register an account first!"));
+
       } else if (message.content.startsWith("!rename to")) {
         let n_steemname = message.content.trim().split(/ +/g)[2]; // New steem name
         Steem.api.getAccounts([n_steemname], function(err, result) {
-            if (result.length == 0) {
-              message.author.send("Please enter a valid steem name").catch(err => message.author.send("Please register an account first!"));
-            } else if (result.length != 0) {
-              for (let g = 0; g < dbTemp.length; g++) {
-                if (dbTemp[g]._id == message.author.id) {
-                  dbTemp[g].Steem_name = n_steemname;
-                  updateRealDB(g);
-                  message.author.send({
-                    embed: {
-                      color: 0xc500cc,
-                      description: " Your steem name has changed to: `" + n_steemname + "`. Now you will receive messages for this steem name."
-                    }
-                  }).catch(err => message.author.send("Please register an account first!"));
-                }
+          if (result.length == 0) {
+            message.author.send("Please enter a valid steem name").catch(err => message.author.send("Please register an account first!"));
+          } else if (result.length != 0) {
+            for (let g = 0; g < dbTemp.length; g++) {
+              if (dbTemp[g]._id == message.author.id) {
+                dbTemp[g].Steem_name = n_steemname;
+                updateRealDB(g);
+                message.author.send({
+                  embed: {
+                    color: 0xc500cc,
+                    description: " Your steem name has changed to: `" + n_steemname + "`. Now you will receive messages for this steem name."
+                  }
+                }).catch(err => message.author.send("Please register an account first!"));
               }
             }
-          });
+          }
+        });
+      } else if (message.content == "!help") {
+        message.author.send({
+          embed: {
+            color: 0x00c1b1,
+            fields: [{
+                name: "Get your account name and credit with:",
+                value: `!info`
+              },
+              {
+                name: "Get your key to buy credits:",
+                value: `!generate_key`
+              },
+              {
+                name: "Rename steem user name with:",
+                value: `!rename to <new_name>`
+              },
+              {
+                name: "Receive messages toggle with:",
+                value: `!receive msg t/f`
+              },
+              {
+                name: "Receive upvotes toggle with:",
+                value: `!receive vote t/f`
+              },
+              {
+                name: "Receive follower toggle with:",
+                value: `!receive follower t/f`
+              },
+              {
+                name: "Receive comment toggle with:",
+                value: `!receive comment t/f`
+              },
+              {
+                name: "Receive transfer toggle with:",
+                value: `!receive transfer t/f`
+              },
+              {
+                name: "Docs",
+                value: "http://steemdbot.jaeven.com/" // Add link to proper documentation of this
+              }
+            ],
+            footer:{
+              text: "with !receive <choice> <t> or <f> you can stop or receive your messages of different activities."
+            }
+          }
+        }).catch(err => message.author.send("Please register an account first!"));
+      } else if (message.content.startsWith("!receive")) {
+        let argt = message.content.trim().split(/ +/g); // New steem name
+        if (argt[1] == "msg") {
+          if (argt[2] == "t") {
+            for (let g = 0; g < dbTemp.length; g++) {
+              if (dbTemp[g]._id == message.author.id) {
+                dbTemp[g].Receive_msg = true;
+                updateRealDB(g);
+              }
+            }
+          }
+          if (argt[2] == "f") {
+            for (let g = 0; g < dbTemp.length; g++) {
+              if (dbTemp[g]._id == message.author.id) {
+                dbTemp[g].Receive_msg = false;
+                updateRealDB(g);
+              }
+            }
+          }
+        } else if (argt[1] == "vote") {
+          if (argt[2] == "t") {
+            for (let g = 0; g < dbTemp.length; g++) {
+              if (dbTemp[g]._id == message.author.id) {
+                dbTemp[g].Receive_Upvotes = true;
+                updateRealDB(g);
+              }
+            }
+          }
+          if (argt[2] == "f") {
+            for (let g = 0; g < dbTemp.length; g++) {
+              if (dbTemp[g]._id == message.author.id) {
+                dbTemp[g].Receive_Upvotes = false;
+                updateRealDB(g);
+              }
+            }
+          }
+        } else if (argt[1] == "follower") {
+          if (argt[2] == "t") {
+            for (let g = 0; g < dbTemp.length; g++) {
+              if (dbTemp[g]._id == message.author.id) {
+                dbTemp[g].Receive_follower = true;
+                updateRealDB(g);
+              }
+            }
+          }
+          if (argt[2] == "f") {
+            for (let g = 0; g < dbTemp.length; g++) {
+              if (dbTemp[g]._id == message.author.id) {
+                dbTemp[g].Receive_follower = false;
+                updateRealDB(g);
+              }
+            }
+          }
+        } else if (argt[1] == "transfer") {
+          if (argt[2] == "t") {
+            for (let g = 0; g < dbTemp.length; g++) {
+              if (dbTemp[g]._id == message.author.id) {
+                dbTemp[g].Receive_transfer = true;
+                updateRealDB(g);
+              }
+            }
+          }
+          if (argt[2] == "f") {
+            for (let g = 0; g < dbTemp.length; g++) {
+              if (dbTemp[g]._id == message.author.id) {
+                dbTemp[g].Receive_transfer = false;
+                updateRealDB(g);
+              }
+            }
+          }
+        } else if (argt[1] == "comment") {
+          if (argt[2] == "t") {
+            for (let g = 0; g < dbTemp.length; g++) {
+              if (dbTemp[g]._id == message.author.id) {
+                dbTemp[g].Receive_Comments = true;
+                updateRealDB(g);
+              }
+            }
+          }
+          if (argt[2] == "f") {
+            for (let g = 0; g < dbTemp.length; g++) {
+              if (dbTemp[g]._id == message.author.id) {
+                dbTemp[g].Receive_Comments = false;
+                updateRealDB(g);
+              }
+            }
+          }
+        } else {
+          message.author.send({
+            embed: {
+              color: 0xe04516,
+              description: "Please use correct format, use `!help` to learn more."
+            }
+          }).catch(err => message.author.send("Please register an account first!"));
         }
+        message.author.send({
+          embed: {
+            color: 0xe08115,
+            description: "Your changes will be applied if it was correct, use `!info` to know more."
+          }
+        }).catch(err => message.author.send("Please register an account first!"));
+      }
 
-    }// Starts with !
-  }// It's a dm
+
+    } // Starts with !
+  } // It's a dm
 });
 
 
@@ -222,6 +398,9 @@ function sendSteemActivityMessagesToUsers() {
   Steem.api.streamTransactions('head', (error, result) => {
     let txType = result.operations[0][0];
     let txData = result.operations[0][1];
+    if (error) {
+      throw error;
+    }
     for (let i = 0; i < dbTemp.length; i++) {
       if (dbTemp[i].Receive_msg == true && dbTemp[i].Credit >= 1) {
         let s_name = dbTemp[i].Steem_name;
@@ -345,19 +524,23 @@ function sendSteemActivityMessagesToUsers() {
 } // Send steem activity function end.
 
 function updateRealDB(i) {
-  var c_name = dbTemp[i]._id;
+  var c_id = dbTemp[i]._id;
   var c_credit = dbTemp[i].Credit;
   var r_msg = dbTemp[i].Receive_msg;
   var pr_key = dbTemp[i].private_key;
   var p_total = dbTemp[i].Post_received;
   var new_name = dbTemp[i].Steem_name;
+  var r_vote = dbTemp[i].Receive_Upvotes;
+  var r_comment = dbTemp[i].Receive_Comments;
+  var r_transfer = dbTemp[i].Receive_transfer;
+  var r_follower = dbTemp[i].Receive_follower;
   MongoClient.connect(url, { 
     useNewUrlParser:  true 
   }, function(err, db) {
     if (err) throw err;
     var dbo = db.db("mydb");
     var query = {
-      _id: c_name
+      _id: c_id
     };
     var newValues = {
       $set: {
@@ -365,7 +548,11 @@ function updateRealDB(i) {
         Receive_msg: r_msg,
         private_key: pr_key,
         Post_received: p_total,
-        Steem_name: new_name
+        Steem_name: new_name,
+        Receive_Upvotes: r_vote,
+        Receive_Comments: r_comment,
+        Receive_transfer: r_transfer,
+        Receive_follower: r_follower
 
       }
     };
