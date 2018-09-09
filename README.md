@@ -16,5 +16,6 @@ How to Install:
 }
 ```
 - Run `npm install` in project directory
+- Use `node .` command to start project locally.
 
 `index.js` is the entry file and consist with all code . Join the bot server to use it: https://discord.gg/J5wzUC
