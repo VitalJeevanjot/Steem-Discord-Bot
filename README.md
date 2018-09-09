@@ -12,7 +12,7 @@ How to Install:
 {
   "token":"bot_token_secret",
   "prefix":"!", // It's not required now in this bot becuase bot not work with this prefix.
-  "ownerID":"Genievot#6561"
+  "ownerID":"<Your_Discord_Name>"// It's not required now in this bot.
 }
 ```
 - Run `npm install` in project directory
